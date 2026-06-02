@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <style>
+        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; }
+        #terminal { height: 70vh; overflow-y: auto; white-space: pre-wrap; }
+        input { background: transparent; border: none; color: #0f0; font-family: inherit; width: 100%; outline: none; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+    <div id="terminal">System Ready. Commands: ls, touch, echo, cat, grep, download, clear</div>
+    <div><span id="prompt">user@terminal:~$ </span><input type="text" id="cmd" autofocus></div>
+
+    <script>
+        // בסיס נתונים פנימי: שם קובץ וערך הטקסט שלו
+        let files = { "hello.txt": "Welcome to my custom terminal!" };
+        const terminal = document.getElementById('terminal');
+        const input = document.getElementById('cmd');
+
+        input.addEventListener('keydown', async function(e) {
+            if (e.key === 'Enter') {
+                const parts = input.value.split(' ');
+                const cmd = parts[0];
+                terminal.innerHTML += `\nuser@terminal:~$ ${input.value}`;
+
+                if (cmd === 'ls') {
+                    terminal.innerHTML += `\n${Object.keys(files).join('  ')}`;
+                } else if (cmd === 'touch') {
+                    files[parts[1]] = "";
+                    terminal.innerHTML += `\nFile ${parts[1]} created.`;
+                } else if (cmd === 'echo') {
+                    // שימוש: echo "text" > filename
+                    if(parts.includes('>')) {
+                        files[parts[3]] = parts[1].replace(/"/g, '');
+                    } else {
+                        terminal.innerHTML += `\n${parts.slice(1).join(' ')}`;
+                    }
+                } else if (cmd === 'cat') {
+                    terminal.innerHTML += `\n${files[parts[1]] || "File not found"}`;
+                } else if (cmd === 'grep') {
+                    // שימוש: grep "word" filename
+                    const searchTerm = parts[1].replace(/"/g, '');
+                    const content = files[parts[2]];
+                    if (content && content.includes(searchTerm)) terminal.innerHTML += `\n${content}`;
+                    else terminal.innerHTML += `\nNo match found.`;
+                } else if (cmd === 'download') {
+                    const zip = new JSZip();
+                    for (let name in files) zip.file(name, files[name]);
+                    const blob = await zip.generateAsync({type:"blob"});
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = "my_files.zip";
+                    a.click();
+                    terminal.innerHTML += `\nDownloading archive...`;
+                } else if (cmd === 'clear') {
+                    terminal.innerHTML = '';
+                } else {
+                    terminal.innerHTML += `\nCommand not found.`;
+                }
+                input.value = '';
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+        });
+    </script>
+</body>
+</html>
